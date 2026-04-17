@@ -1,0 +1,40 @@
+name: "Reusable Lambda Deploy"
+
+on:
+  workflow_call:
+    inputs:
+      lambda-name:
+        required: true
+        type: string
+      artifact-name:
+        required: true
+        type: string
+      aws-region:
+        required: false
+        type: string
+        default: "us-east-1"
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Update Lambda Code
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ inputs.lambda-name }} \
+            --zip-file fileb://${{ inputs.artifact-name }}.zip
+        shell: bash
