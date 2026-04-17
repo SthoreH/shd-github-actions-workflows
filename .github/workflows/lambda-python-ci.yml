@@ -1,0 +1,27 @@
+# Reusable workflow for Python Lambda CI
+name: Lambda Python CI
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: "3.11"
+      lambda-path:
+        type: string
+        required: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Call custom setup action from the same shd- repo
+      - name: Setup Python
+        uses: ./.github/actions/python-setup
+        with:
+          version: ${{ inputs.python-version }}
+
+      - name: Run Pytest
+        run: pytest ${{ inputs.lambda-path }}/tests/

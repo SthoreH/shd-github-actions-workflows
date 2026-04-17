@@ -1,0 +1,40 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-title:
+    name: Validate PR Title (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: false
+          subjectPattern: ^.{10,}$
+          subjectPatternError: |
+            A descrição do título deve ter no mínimo 10 caracteres.
+            Exemplo: "feat: adiciona suporte ao módulo S3"
+
+  validate-description:
+    name: Validate PR Description
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body is not empty
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$(echo "$PR_BODY" | tr -d '[:space:]')" ]; then
+            echo "::error::A descrição do PR não pode estar vazia. Descreva as mudanças realizadas."
+            exit 1
+          fi
+          echo "Descrição preenchida."
