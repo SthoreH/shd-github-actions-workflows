@@ -1,0 +1,46 @@
+name: Validate PR
+description: >
+  Valida título (Conventional Commits), descrição do PR e a regra de esteira
+  de branches (feature/* → dev → main).
+
+inputs:
+  github-token:
+    description: GitHub token para acesso à API
+    required: true
+  validate-title:
+    description: Habilita a validação do título do PR (Conventional Commits)
+    required: false
+    default: 'true'
+  validate-description:
+    description: Habilita a validação da descrição do PR
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Check branch flow rule
+      shell: bash
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+        BASE_REF: ${{ github.base_ref }}
+      run: bash ${{ github.action_path }}/check-branch-flow.sh
+
+    - name: Validate PR title (Conventional Commits)
+      if: ${{ inputs.validate-title == 'true' }}
+      uses: amannn/action-semantic-pull-request@v5
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        requireScope: false
+        subjectPattern: ^.{10,}$
+        subjectPatternError: |
+          A descrição do título deve ter no mínimo 10 caracteres.
+          Exemplo: "feat: adiciona suporte ao módulo S3"
+
+    - name: Validate PR description
+      if: ${{ inputs.validate-description == 'true' }}
+      shell: bash
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
+      run: bash ${{ github.action_path }}/check-pr-description.sh

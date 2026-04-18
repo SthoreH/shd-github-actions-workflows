@@ -1,0 +1,28 @@
+name: Validate Terraform Module
+description: Checks formatting, initializes, and validates a Terraform module.
+
+inputs:
+  terraform_version:
+    description: Terraform version to use
+    required: false
+    default: "1.14.8"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform_version }}
+
+    - name: Check Terraform formatting
+      shell: bash
+      run: terraform fmt -check -recursive
+
+    - name: Initialize Terraform
+      shell: bash
+      run: terraform init -backend=false
+
+    - name: Validate Terraform configuration
+      shell: bash
+      run: terraform validate
