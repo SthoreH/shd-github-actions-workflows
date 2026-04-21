@@ -2,11 +2,8 @@ name: Terraform Validate & Plan
 description: Runs terraform fmt, init, validate and plan against a given environment
 
 inputs:
-  working-directory:
-    description: Directory containing Terraform configuration
-    required: true
-  tfvars:
-    description: Path to tfvars file (relative to working-directory)
+  environment:
+    description: Deployment environment (e.g., dev, prod)
     required: true
   tf-backend-bucket:
     description: S3 bucket for Terraform state backend
@@ -41,12 +38,12 @@ runs:
 
     - name: Terraform Format Check
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: terraform-aws
       run: terraform fmt -check -recursive
 
     - name: Terraform Init
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: terraform-aws
       run: |
         terraform init \
           -backend-config="bucket=${{ inputs.tf-backend-bucket }}" \
@@ -54,10 +51,10 @@ runs:
 
     - name: Terraform Validate
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: terraform-aws
       run: terraform validate
 
     - name: Terraform Plan
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: terraform plan -var-file=${{ inputs.tfvars }} -no-color
+      working-directory: terraform-aws
+      run: terraform plan -var-file=environments/${{ inputs.environment }}.tfvars -no-color
