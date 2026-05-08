@@ -1,0 +1,35 @@
+# shared-actions/composite/config-parser/action.yml
+name: "Parse Config"
+description: "Reads and merges pipeline config file"
+inputs:
+  target_env:
+    description: "Target environment"
+    required: true
+  config_file:
+    description: "Path to config file"
+    default: ".pipeline.yml"
+
+outputs:
+  config:
+    description: "JSON string of merged variables"
+    value: ${{ steps.parser.outputs.vars }}
+  files_to_replace:
+    description: "List of files for token replacement"
+    value: ${{ steps.parser.outputs.files }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Config Parse
+      id: parser
+      shell: bash
+      run: |
+        # 1. Merge global lambda_settings with the specific environment
+        VARS=$(yq -o=json -I=0 '.runtime * .environments.${{ inputs.target_env }} * .tests * .deploy' ${{ inputs.config_file }})
+
+        # 2. Extract the substitution files list
+        FILES=$(yq -r '.environments.files-to-replace | join(" ")' ${{ inputs.config_file }})
+
+        # 3. Set outputs
+        echo "vars=$VARS" >> $GITHUB_OUTPUT
+        echo "files=$FILES" >> $GITHUB_OUTPUT
