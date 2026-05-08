@@ -2,7 +2,7 @@
 name: "Parse Config"
 description: "Reads and merges pipeline config file"
 inputs:
-  target_env:
+  environment:
     description: "Target environment"
     required: true
   config_file:
