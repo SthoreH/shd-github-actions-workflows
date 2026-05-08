@@ -25,10 +25,10 @@ runs:
       shell: bash
       run: |
         # 1. Merge global lambda_settings with the specific environment
-        VARS=$(yq -o=json -I=0 '.runtime * .environments.${{ inputs.target_env }} * .tests * .deploy' ${{ inputs.config_file }})
+        VARS=$(yq -o=json -I=0 '.runtime * .environments["${{ inputs.environment }}"] * .tests * .deploy' ${{ inputs.config_file }})
 
         # 2. Extract the substitution files list
-        FILES=$(yq -r '.environments.files-to-replace | join(" ")' ${{ inputs.config_file }})
+        FILES=$(yq -r '.environments["files-to-replace"] | join(" ")' ${{ inputs.config_file }})
 
         # 3. Set outputs
         echo "vars=$VARS" >> $GITHUB_OUTPUT
