@@ -34,9 +34,9 @@ runs:
               "deploy":      .deploy
             }
             | .. | select(tag != "!!map" and tag != "!!seq")
-            | {(path | join("_")): .}
+            | {"key": (path | join("_")), "value": .}
           ]
-          | reduce .[] as $i ({}; . * $i)
+          | from_entries
         ' ${{ inputs.config_file }})
 
         # 2. Extract the substitution files list
