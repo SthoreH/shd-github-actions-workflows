@@ -1,0 +1,24 @@
+# shared-actions/composite/token-replacer/action.yml
+name: 'Replace Tokens'
+description: 'Replaces ${tokens} in specific files using a JSON config'
+author: 'DevOps Team'
+
+inputs:
+  files:
+    description: 'Space-separated list of file paths to process'
+    required: true
+  vars:
+    description: 'JSON string containing key-value pairs for replacement'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Token Replace
+      shell: bash
+      env:
+        # Passing inputs as environment variables for the Python script
+        INPUT_FILES: ${{ inputs.files }}
+        INPUT_VARS: ${{ inputs.vars }}
+      run: |
+        python3 "${{ github.action_path }}/token_replacer.py"
