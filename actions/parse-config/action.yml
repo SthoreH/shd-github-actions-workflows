@@ -34,7 +34,7 @@ runs:
               "deploy":      .deploy
             }
             | .. | select(tag != "!!map" and tag != "!!seq")
-            | {"key": (path | join("_")), "value": .}
+            | {"key": ("pipe_" + (path | join("_"))), "value": .}
           ]
           | from_entries
         ' ${{ inputs.config_file }})
