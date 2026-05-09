@@ -4,6 +4,7 @@ Shared reusable workflows and composite actions for SthoreH repositories. Pipeli
 
 ## What's here
 
+
 - [.github/workflows/](.github/workflows/) — reusable workflows that consumer repos call via `uses:`.
 - [actions/](actions/) — composite actions that workflows (or consumers) embed via `uses:` at the step level.
 - [docs/](docs/) — per-piece documentation and shared conventions.
