@@ -38,13 +38,14 @@ jobs:
           environment: ${{ inputs.environment }}
 
       # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
+      # Bracket notation is required: GitHub Actions dot-access doesn't work for keys containing hyphens.
       - name: Export Config
         run: |
-          echo "PY_VERSION=${{ fromJSON(steps.config-parser.outputs.config).pipe_runtime_python-version }}" >> $GITHUB_ENV
-          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config).pipe_deploy_working-path }}" >> $GITHUB_ENV
-          echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.config).pipe_deploy_requirements }}" >> $GITHUB_ENV
-          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config).pipe_infra_working-path }}" >> $GITHUB_ENV
-          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config).pipe_infra_terraform-version }}" >> $GITHUB_ENV
+          echo "PY_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_python-version'] }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_working-path'] }}" >> $GITHUB_ENV
+          echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_requirements'] }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
 
       # Substitute env-specific tokens into source files before packaging.
       - name: Replace Tokens
