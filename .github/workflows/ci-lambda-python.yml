@@ -1,0 +1,71 @@
+# Reusable workflow for Python Lambda CI
+name: Lambda Python CI
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+jobs:
+   # JOB 1: Focado apenas na aplicação
+  python-quality:
+    name: Validate Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "Merged Vars: ${{ steps.config-parser.outputs.config }}"
+          echo "Files to Replace: ${{ steps.config-parser.outputs.files_to_replace }}"
+          echo "PY_VERSION=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_python-version }}" >> $GITHUB_ENV
+          echo "TESTS_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_tests_working-path }}" >> $GITHUB_ENV
+          echo "TESTS_REQS=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_tests_requirements }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_working-path }}" >> $GITHUB_ENV
+          echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_requirements }}" >> $GITHUB_ENV
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ${{ env.TESTS_PATH }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ${{ env.TESTS_REQS }}
+
+      - name: Python Quality Check
+        run: |
+          pip install flake8 pytest
+          flake8 .
+          pytest
+
+  # JOB 2: Focado apenas na infraestrutura (Executa ao mesmo tempo)
+  terraform-quality:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "Merged Vars: ${{ steps.config-parser.outputs.config }}"
+          echo "Files to Replace: ${{ steps.config-parser.outputs.files_to_replace }}"
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_infra_terraform-version }}" >> $GITHUB_ENV
+          
