@@ -5,6 +5,10 @@ inputs:
   environment:
     description: Deployment environment (e.g., dev, prod)
     required: true
+  working-directory:
+    description: Path to the Terraform root module (relative to repo root)
+    required: false
+    default: terraform-aws
   tf-backend-bucket:
     description: S3 bucket for Terraform state backend
     required: true
@@ -26,10 +30,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: hashicorp/setup-terraform@v3
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ inputs.terraform-version }}
 
+    # Assumes role via OIDC. Caller job must set permissions: id-token: write.
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -38,23 +44,32 @@ runs:
 
     - name: Terraform Format Check
       shell: bash
-      working-directory: terraform-aws
+      working-directory: ${{ inputs.working-directory }}
       run: terraform fmt -check -recursive
 
+    # Backend config injected here so the action stays environment-agnostic.
     - name: Terraform Init
       shell: bash
-      working-directory: terraform-aws
+      working-directory: ${{ inputs.working-directory }}
       run: |
         terraform init \
+          -input=false \
+          -lock-timeout=5m \
           -backend-config="bucket=${{ inputs.tf-backend-bucket }}" \
           -backend-config="key=${{ inputs.tf-backend-key }}"
 
     - name: Terraform Validate
       shell: bash
-      working-directory: terraform-aws
-      run: terraform validate
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform validate -no-color
 
+    # Org convention: per-env tfvars at environments/<env>.tfvars.
     - name: Terraform Plan
       shell: bash
-      working-directory: terraform-aws
-      run: terraform plan -var-file=environments/${{ inputs.environment }}.tfvars -no-color
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        terraform plan \
+          -input=false \
+          -lock-timeout=5m \
+          -no-color \
+          -var-file=environments/${{ inputs.environment }}.tfvars
