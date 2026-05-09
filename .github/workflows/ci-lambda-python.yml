@@ -27,14 +27,14 @@ jobs:
         with:
           environment: ${{ inputs.environment }}
 
-      # Flatten merged_vars (JSON) into env vars so later steps don't repeat fromJSON expressions.
+      # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
       - name: Export Config
         run: |
-          echo "PY_VERSION=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_python-version }}" >> $GITHUB_ENV
-          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_working-path }}" >> $GITHUB_ENV
-          echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_application_requirements }}" >> $GITHUB_ENV
-          echo "TESTS_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_tests_working-path }}" >> $GITHUB_ENV
-          echo "TESTS_REQS=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_tests_requirements }}" >> $GITHUB_ENV
+          echo "PY_VERSION=${{ fromJSON(steps.config-parser.outputs.config).pipe_runtime_python-version }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config).pipe_deploy_working-path }}" >> $GITHUB_ENV
+          echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.config).pipe_deploy_requirements }}" >> $GITHUB_ENV
+          echo "TESTS_PATH=${{ fromJSON(steps.config-parser.outputs.config).pipe_tests_working-path }}" >> $GITHUB_ENV
+          echo "TESTS_REQS=${{ fromJSON(steps.config-parser.outputs.config).pipe_tests_requirements }}" >> $GITHUB_ENV
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -83,8 +83,8 @@ jobs:
 
       - name: Export Config
         run: |
-          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_infra_terraform-version }}" >> $GITHUB_ENV
-          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_infra_working-path }}" >> $GITHUB_ENV
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config).pipe_infra_terraform-version }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config).pipe_infra_working-path }}" >> $GITHUB_ENV
 
       - name: Validate Terraform
         uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@v1.3.0

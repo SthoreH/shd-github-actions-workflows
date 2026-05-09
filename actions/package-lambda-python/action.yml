@@ -1,0 +1,45 @@
+name: Package Python Lambda
+description: Builds a Lambda-compatible .zip with runtime dependencies installed alongside the source code.
+
+inputs:
+  python-version:
+    description: Python version used to install dependencies
+    required: true
+  working-directory:
+    description: Source root containing application code and the requirements file (e.g., app/src)
+    required: true
+  requirements:
+    description: Requirements file name relative to working-directory
+    required: true
+  output-path:
+    description: Absolute path where the resulting .zip will be written
+    required: false
+    default: ${{ github.workspace }}/dist/lambda.zip
+
+outputs:
+  zip-path:
+    description: Absolute path to the produced .zip
+    value: ${{ steps.build.outputs.zip-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+        cache-dependency-path: ${{ inputs.working-directory }}/${{ inputs.requirements }}
+
+    # Lambda layout: deps installed into the package root, source copied on top, then zipped.
+    - name: Build package
+      id: build
+      shell: bash
+      run: |
+        set -euo pipefail
+        BUILD_DIR=$(mktemp -d)
+        pip install --no-cache-dir -r "${{ inputs.working-directory }}/${{ inputs.requirements }}" -t "$BUILD_DIR"
+        rsync -a --exclude="${{ inputs.requirements }}" "${{ inputs.working-directory }}/" "$BUILD_DIR/"
+        mkdir -p "$(dirname "${{ inputs.output-path }}")"
+        (cd "$BUILD_DIR" && zip -qr "${{ inputs.output-path }}" .)
+        echo "zip-path=${{ inputs.output-path }}" >> "$GITHUB_OUTPUT"

@@ -29,6 +29,7 @@ runs:
           [
             {
               "runtime":     .runtime,
+              "infra":       .infra,
               "environment": .environments["${{ inputs.environment }}"],
               "tests":       .tests,
               "deploy":      .deploy

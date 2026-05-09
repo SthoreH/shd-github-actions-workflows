@@ -1,0 +1,70 @@
+name: Terraform Deploy
+description: Runs terraform init and apply against a given environment, passing the Lambda artifact path as a tfvar.
+
+inputs:
+  environment:
+    description: Deployment environment (e.g., dev, prod)
+    required: true
+  working-directory:
+    description: Path to the Terraform root module (relative to repo root)
+    required: false
+    default: terraform-aws
+  tf-backend-bucket:
+    description: S3 bucket for Terraform state backend
+    required: true
+  tf-backend-key:
+    description: Key for Terraform state in S3
+    required: true
+  aws-role-arn:
+    description: AWS IAM role ARN to assume
+    required: true
+  aws-region:
+    description: AWS region
+    required: false
+    default: sa-east-1
+  terraform-version:
+    description: Terraform version to use
+    required: false
+    default: '1.14.8'
+  lambda-zip-path:
+    description: Absolute path to the packaged Lambda .zip; passed as `-var=lambda_zip_path=...`.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+
+    # Assumes role via OIDC. Caller job must set permissions: id-token: write.
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+
+    # Backend config injected here so the action stays environment-agnostic.
+    - name: Terraform Init
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        terraform init \
+          -input=false \
+          -lock-timeout=5m \
+          -backend-config="bucket=${{ inputs.tf-backend-bucket }}" \
+          -backend-config="key=${{ inputs.tf-backend-key }}"
+
+    # Org convention: per-env tfvars at environments/<env>.tfvars. Lambda artifact path passed as a tfvar.
+    - name: Terraform Apply
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        terraform apply \
+          -input=false \
+          -lock-timeout=5m \
+          -auto-approve \
+          -no-color \
+          -var-file=environments/${{ inputs.environment }}.tfvars \
+          -var=lambda_zip_path=${{ inputs.lambda-zip-path }}
