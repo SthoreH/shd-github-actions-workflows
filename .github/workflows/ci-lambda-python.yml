@@ -87,7 +87,7 @@ jobs:
           echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.merged_vars).pipe_infra_working-path }}" >> $GITHUB_ENV
 
       - name: Validate Terraform
-        uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@v1.2.0
+        uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@v1.3.0
         with:
           environment: ${{ inputs.environment }}
           working-directory: ${{ env.TF_PATH }}
