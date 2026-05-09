@@ -1,5 +1,5 @@
 name: Terraform Deploy
-description: Runs terraform init and apply against a given environment, passing the Lambda artifact path as a tfvar.
+description: Runs terraform init and apply against a given environment.
 
 inputs:
   environment:
@@ -26,9 +26,6 @@ inputs:
     description: Terraform version to use
     required: false
     default: '1.14.8'
-  lambda-zip-path:
-    description: Absolute path to the packaged Lambda .zip; passed as `-var=lambda_zip_path=...`.
-    required: true
 
 runs:
   using: composite
@@ -56,7 +53,7 @@ runs:
           -backend-config="bucket=${{ inputs.tf-backend-bucket }}" \
           -backend-config="key=${{ inputs.tf-backend-key }}"
 
-    # Org convention: per-env tfvars at environments/<env>.tfvars. Lambda artifact path passed as a tfvar.
+    # Org convention: per-env tfvars at environments/<env>.tfvars.
     - name: Terraform Apply
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -66,5 +63,4 @@ runs:
           -lock-timeout=5m \
           -auto-approve \
           -no-color \
-          -var-file=environments/${{ inputs.environment }}.tfvars \
-          -var=lambda_zip_path=${{ inputs.lambda-zip-path }}
+          -var-file=environments/${{ inputs.environment }}.tfvars

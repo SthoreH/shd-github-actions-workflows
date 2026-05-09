@@ -54,8 +54,8 @@ jobs:
           files: ${{ steps.config-parser.outputs.files_to_replace }}
           vars: ${{ steps.config-parser.outputs.config }}
 
+      # Builds the .zip at <repo-root>/dist/lambda.zip — the path the terraform locals expect.
       - name: Package Lambda
-        id: package
         uses: SthoreH/shd-github-actions-workflows/actions/package-lambda-python@main
         with:
           python-version: ${{ env.PY_VERSION }}
@@ -71,4 +71,3 @@ jobs:
           aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
           tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
           tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate
-          lambda-zip-path: ${{ steps.package.outputs.zip-path }}
