@@ -94,4 +94,4 @@ jobs:
           terraform-version: ${{ env.TF_VERSION }}
           aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
           tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
-          tf-backend-key: ${{ github.event.repository.name }}/${{ inputs.environment }}.tfstate
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate
