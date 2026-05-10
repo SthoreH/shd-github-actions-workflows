@@ -29,6 +29,8 @@ Consumers pin pieces to a published tag (e.g. `@v1.4.0`), never `@main`. Tags ar
 | [cd-lambda-python](docs/workflows/cd-lambda-python.md) | Packages a Python Lambda and applies Terraform. Supports rollback via the `ref` input. |
 | [ci-lambda-nodejs](docs/workflows/ci-lambda-nodejs.md) | Validates a Node.js (TypeScript or JavaScript) Lambda repo (lint, tests, terraform fmt + validate + plan). |
 | [cd-lambda-nodejs](docs/workflows/cd-lambda-nodejs.md) | Packages a Node.js Lambda (esbuild bundle) and applies Terraform. Supports rollback via the `ref` input. |
+| [ci-infra-terraform](docs/workflows/ci-infra-terraform.md) | Validates a pure-infrastructure repo (no app code) — terraform fmt + validate + plan. |
+| [cd-infra-terraform](docs/workflows/cd-infra-terraform.md) | Applies Terraform for a pure-infrastructure repo. Supports rollback via the `ref` input. |
 
 ### Composite actions
 

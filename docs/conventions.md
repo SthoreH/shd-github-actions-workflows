@@ -6,18 +6,21 @@ Shared rules every reusable workflow and composite action in this repo relies on
 
 Lives at the consumer repo root. Parsed by [parse-config](actions/parse-config.md), which merges the global blocks with the selected environment and flattens everything into `pipe_<section>_<key>` JSON keys.
 
-| Section | Purpose | Flattened keys |
-|---|---|---|
-| `runtime` | Lambda runtime version. Set the key matching your stack: `python-version` or `nodejs-version`. | `pipe_runtime_python-version` **or** `pipe_runtime_nodejs-version` |
-| `infra` | IaC tool version and root module path. | `pipe_infra_terraform-version`, `pipe_infra_working-path` |
-| `deploy` | Source code root and per-runtime build inputs. | Python: `pipe_deploy_working-path`, `pipe_deploy_requirements`. Node.js: `pipe_deploy_working-path`, `pipe_deploy_entry`. |
-| `tests` | Test root (and test requirements for Python). | Python: `pipe_tests_working-path`, `pipe_tests_requirements`. Node.js: `pipe_tests_working-path`. |
-| `environments.<env>` | Per-environment values (only the selected env is merged). | `pipe_environment_<key>` |
-| `environments.files-to-replace` | List of files for token substitution at CD time. | Exposed separately as the `files_to_replace` output. |
+| Section | Required for | Purpose | Flattened keys |
+|---|---|---|---|
+| `runtime` | Lambda apps | Lambda runtime version. Set the key matching your stack: `python-version` or `nodejs-version`. | `pipe_runtime_python-version` **or** `pipe_runtime_nodejs-version` |
+| `infra` | all | IaC tool version and root module path. | `pipe_infra_terraform-version`, `pipe_infra_working-path` |
+| `deploy` | Lambda apps | Source code root and per-runtime build inputs. | Python: `pipe_deploy_working-path`, `pipe_deploy_requirements`. Node.js: `pipe_deploy_working-path`, `pipe_deploy_entry`. |
+| `tests` | Lambda apps | Test root (and test requirements for Python). | Python: `pipe_tests_working-path`, `pipe_tests_requirements`. Node.js: `pipe_tests_working-path`. |
+| `environments.<env>` | all | Per-environment values (only the selected env is merged). | `pipe_environment_<key>` |
+| `environments.files-to-replace` | optional | List of files for token substitution at CD time. | Exposed separately as the `files_to_replace` output. |
+
+For **pure-infrastructure** repos (DynamoDB, ECS, EventBus, IAM, etc. — no application code), only `infra` and `environments` are required. The Lambda-specific sections (`runtime`, `deploy`, `tests`) can be omitted.
 
 Real examples:
 - Python — [app-aws-lbd-products-service/.pipeline.yml](../../../app/app-aws-lbd-products-service/.pipeline.yml).
 - Node.js — [tpl-app-aws-lbd-nodejs/.pipeline.yml](../../../tpl/tpl-app-aws-lbd-nodejs/.pipeline.yml).
+- Infra pura — [tpl-infra-aws-ddb/.pipeline.yml](../../../tpl/tpl-infra-aws-ddb/.pipeline.yml).
 
 ## GitHub Environment vars (per env)
 

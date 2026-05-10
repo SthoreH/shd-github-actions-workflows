@@ -1,0 +1,50 @@
+# Reusable workflow for pure infrastructure repos (no application code).
+# Validates Terraform end-to-end (fmt + init + validate + plan) against a target environment.
+name: Infra Terraform CI
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-quality:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN and vars.TF_STATE_BUCKET.
+    environment: ${{ inputs.environment }}
+    # id-token: write is required by aws-actions/configure-aws-credentials (OIDC) inside validate-terraform.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
+      # Bracket notation is required: GitHub Actions dot-access doesn't work for keys containing hyphens.
+      - name: Export Config
+        run: |
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+
+      - name: Validate Terraform
+        uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@main
+        with:
+          environment: ${{ inputs.environment }}
+          working-directory: ${{ env.TF_PATH }}
+          terraform-version: ${{ env.TF_VERSION }}
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate

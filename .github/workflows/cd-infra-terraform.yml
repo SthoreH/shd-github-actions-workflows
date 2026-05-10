@@ -1,0 +1,61 @@
+# Reusable workflow for pure infrastructure repos (no application code).
+# Token replacement -> terraform apply against the target environment.
+# The same flow is used for first-class deploys and rollbacks (re-deploy at a previous tag via the `ref` input).
+name: Infra Terraform CD
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      ref:
+        description: Git ref (tag, branch, or SHA) to deploy. Empty means the workflow's default ref. Used by rollback.
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write   # OIDC for AWS
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN / vars.TF_STATE_BUCKET
+    # and to trigger any environment protection rules (required reviewers, wait timers).
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+
+      # No-op when files-to-replace is empty/null — kept here for parity with the Lambda CD flow.
+      - name: Replace Tokens
+        uses: SthoreH/shd-github-actions-workflows/actions/replace-tokens@main
+        with:
+          files: ${{ steps.config-parser.outputs.files_to_replace }}
+          vars: ${{ steps.config-parser.outputs.config }}
+
+      - name: Deploy Terraform
+        uses: SthoreH/shd-github-actions-workflows/actions/deploy-terraform@main
+        with:
+          environment: ${{ inputs.environment }}
+          working-directory: ${{ env.TF_PATH }}
+          terraform-version: ${{ env.TF_VERSION }}
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate
