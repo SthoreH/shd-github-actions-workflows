@@ -27,6 +27,8 @@ Consumers pin pieces to a published tag (e.g. `@v1.4.0`), never `@main`. Tags ar
 |---|---|
 | [ci-lambda-python](docs/workflows/ci-lambda-python.md) | Validates a Python Lambda repo (lint, tests, terraform fmt + validate + plan). |
 | [cd-lambda-python](docs/workflows/cd-lambda-python.md) | Packages a Python Lambda and applies Terraform. Supports rollback via the `ref` input. |
+| [ci-lambda-nodejs](docs/workflows/ci-lambda-nodejs.md) | Validates a Node.js (TypeScript or JavaScript) Lambda repo (lint, tests, terraform fmt + validate + plan). |
+| [cd-lambda-nodejs](docs/workflows/cd-lambda-nodejs.md) | Packages a Node.js Lambda (esbuild bundle) and applies Terraform. Supports rollback via the `ref` input. |
 
 ### Composite actions
 
@@ -38,6 +40,7 @@ Consumers pin pieces to a published tag (e.g. `@v1.4.0`), never `@main`. Tags ar
 | [validate-terraform](docs/actions/validate-terraform.md) | Runs terraform fmt + init + validate + plan against an environment. |
 | [validate-terraform-module](docs/actions/validate-terraform-module.md) | Lightweight validation (fmt + validate, no backend) for terraform module repos. |
 | [package-lambda-python](docs/actions/package-lambda-python.md) | Builds a Lambda-compatible `.zip` (deps + source) for a Python project. |
+| [package-lambda-nodejs](docs/actions/package-lambda-nodejs.md) | Builds a Lambda-compatible `.zip` (esbuild single-file bundle) for a Node.js project. |
 | [deploy-terraform](docs/actions/deploy-terraform.md) | Runs terraform init + apply, passing the lambda artifact as a tfvar. |
 | [destroy-terraform](docs/actions/destroy-terraform.md) | Runs terraform init + destroy. Generic; not lambda-specific. |
 

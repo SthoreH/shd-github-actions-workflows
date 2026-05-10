@@ -8,14 +8,16 @@ Lives at the consumer repo root. Parsed by [parse-config](actions/parse-config.m
 
 | Section | Purpose | Flattened keys |
 |---|---|---|
-| `runtime` | Lambda runtime version (Python). | `pipe_runtime_python-version` |
+| `runtime` | Lambda runtime version. Set the key matching your stack: `python-version` or `nodejs-version`. | `pipe_runtime_python-version` **or** `pipe_runtime_nodejs-version` |
 | `infra` | IaC tool version and root module path. | `pipe_infra_terraform-version`, `pipe_infra_working-path` |
-| `deploy` | Source code root and runtime requirements file (relative to repo). | `pipe_deploy_working-path`, `pipe_deploy_requirements` |
-| `tests` | Test root and test requirements file. | `pipe_tests_working-path`, `pipe_tests_requirements` |
+| `deploy` | Source code root and per-runtime build inputs. | Python: `pipe_deploy_working-path`, `pipe_deploy_requirements`. Node.js: `pipe_deploy_working-path`, `pipe_deploy_entry`. |
+| `tests` | Test root (and test requirements for Python). | Python: `pipe_tests_working-path`, `pipe_tests_requirements`. Node.js: `pipe_tests_working-path`. |
 | `environments.<env>` | Per-environment values (only the selected env is merged). | `pipe_environment_<key>` |
 | `environments.files-to-replace` | List of files for token substitution at CD time. | Exposed separately as the `files_to_replace` output. |
 
-A real example lives at [app-aws-lbd-products-service/.pipeline.yml](../../../app/app-aws-lbd-products-service/.pipeline.yml).
+Real examples:
+- Python — [app-aws-lbd-products-service/.pipeline.yml](../../../app/app-aws-lbd-products-service/.pipeline.yml).
+- Node.js — [tpl-app-aws-lbd-nodejs/.pipeline.yml](../../../tpl/tpl-app-aws-lbd-nodejs/.pipeline.yml).
 
 ## GitHub Environment vars (per env)
 

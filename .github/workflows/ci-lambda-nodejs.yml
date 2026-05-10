@@ -1,0 +1,108 @@
+# Reusable workflow for Node.js Lambda CI
+name: Lambda Node.js CI
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+# Least-privilege baseline; jobs override when they need more (e.g. id-token: write for OIDC).
+permissions:
+  contents: read
+
+jobs:
+  # Validates the Lambda application code: lint (non-blocking) and tests.
+  nodejs-quality:
+    name: Validate Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
+      # Bracket notation is required: GitHub Actions dot-access doesn't work for keys containing hyphens.
+      - name: Export Config
+        run: |
+          echo "NODE_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_nodejs-version'] }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_working-path'] }}" >> $GITHUB_ENV
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '9'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: ${{ env.APP_PATH }}/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: ${{ env.APP_PATH }}
+        run: pnpm install --frozen-lockfile
+
+      # Non-blocking quality gate: lint findings are reported but don't fail the job.
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        working-directory: ${{ env.APP_PATH }}
+        run: pnpm run lint
+
+      - name: Test
+        working-directory: ${{ env.APP_PATH }}
+        run: pnpm test
+
+  # Validates the Terraform infrastructure end-to-end (fmt + init + validate + plan).
+  terraform-quality:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN and vars.TF_STATE_BUCKET.
+    environment: ${{ inputs.environment }}
+    # id-token: write is required by aws-actions/configure-aws-credentials (OIDC) inside validate-terraform.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "NODE_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_nodejs-version'] }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_working-path'] }}" >> $GITHUB_ENV
+          echo "ENTRY=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_entry'] }}" >> $GITHUB_ENV
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+
+      # Builds the .zip at <repo-root>/dist/lambda.zip so terraform plan can read filebase64sha256.
+      # Not uploaded as a GitHub artifact — discarded with the runner. The CD pipeline rebuilds its own.
+      - name: Package Lambda
+        uses: SthoreH/shd-github-actions-workflows/actions/package-lambda-nodejs@main
+        with:
+          nodejs-version: ${{ env.NODE_VERSION }}
+          working-directory: ${{ env.APP_PATH }}
+          entry-file: ${{ env.ENTRY }}
+
+      - name: Validate Terraform
+        uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@main
+        with:
+          environment: ${{ inputs.environment }}
+          working-directory: ${{ env.TF_PATH }}
+          terraform-version: ${{ env.TF_VERSION }}
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate

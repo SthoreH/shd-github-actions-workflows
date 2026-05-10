@@ -1,0 +1,73 @@
+# Reusable workflow for Node.js Lambda CD: token replacement -> package -> terraform apply.
+name: Lambda Node.js CD
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      ref:
+        description: Git ref (tag, branch, or SHA) to deploy. Empty means the workflow's default ref. Used by rollback.
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write   # OIDC for AWS
+
+jobs:
+  # Single job: package and deploy share the runner so the .zip stays local — no artifact handoff needed.
+  deploy:
+    name: Package & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN / vars.TF_STATE_BUCKET
+    # and to trigger any environment protection rules (required reviewers, wait timers).
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
+      # Bracket notation is required: GitHub Actions dot-access doesn't work for keys containing hyphens.
+      - name: Export Config
+        run: |
+          echo "NODE_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_nodejs-version'] }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_working-path'] }}" >> $GITHUB_ENV
+          echo "ENTRY=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_entry'] }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+
+      # Substitute env-specific tokens into source files before packaging.
+      - name: Replace Tokens
+        uses: SthoreH/shd-github-actions-workflows/actions/replace-tokens@main
+        with:
+          files: ${{ steps.config-parser.outputs.files_to_replace }}
+          vars: ${{ steps.config-parser.outputs.config }}
+
+      # Builds the .zip at <repo-root>/dist/lambda.zip — the path the terraform locals expect.
+      - name: Package Lambda
+        uses: SthoreH/shd-github-actions-workflows/actions/package-lambda-nodejs@main
+        with:
+          nodejs-version: ${{ env.NODE_VERSION }}
+          working-directory: ${{ env.APP_PATH }}
+          entry-file: ${{ env.ENTRY }}
+
+      - name: Deploy Terraform
+        uses: SthoreH/shd-github-actions-workflows/actions/deploy-terraform@main
+        with:
+          environment: ${{ inputs.environment }}
+          working-directory: ${{ env.TF_PATH }}
+          terraform-version: ${{ env.TF_VERSION }}
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate
