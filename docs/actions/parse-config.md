@@ -16,7 +16,7 @@ Source: [actions/parse-config/action.yml](../../actions/parse-config/action.yml)
 | Output | Description |
 |---|---|
 | `config` | JSON string with flattened keys (`pipe_<section>_<key>`). |
-| `files_to_replace` | Space-separated list from `environments.files-to-replace`. Consumed by [replace-tokens](replace-tokens.md). |
+| `files_to_replace` | Space-separated list from `environments.files-to-replace`. Empty string when the key is absent or null (e.g., pure-infra repos). Consumed by [replace-tokens](replace-tokens.md). |
 
 See [conventions](../conventions.md) for the full schema and key flattening rules.
 

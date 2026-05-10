@@ -40,8 +40,9 @@ runs:
           | from_entries
         ' ${{ inputs.config_file }})
 
-        # 2. Extract the substitution files list
-        FILES=$(yq -r '.environments["files-to-replace"] | join(" ")' ${{ inputs.config_file }})
+        # 2. Extract the substitution files list (default to empty array if the key is absent/null —
+        # common for pure-infra repos and Lambda repos that don't use token replacement).
+        FILES=$(yq -r '.environments["files-to-replace"] // [] | join(" ")' ${{ inputs.config_file }})
 
         # 3. Set outputs
         echo "vars=$VARS" >> $GITHUB_OUTPUT
