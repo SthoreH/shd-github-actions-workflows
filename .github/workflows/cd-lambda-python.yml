@@ -12,13 +12,11 @@ on:
         type: string
         required: false
         default: ''
-    secrets:
-      AWS_ROLE_ARN:
-        description: AWS IAM role ARN to assume via OIDC.
-        required: true
-      TF_STATE_BUCKET:
-        description: S3 bucket for Terraform state backend.
-        required: true
+    # AWS_ROLE_ARN and TF_STATE_BUCKET are GitHub Environment secrets, resolved at runtime
+    # by the job-level `environment:` below + the caller's `secrets: inherit`. They must NOT
+    # be declared here: on.workflow_call.secrets can't reference an environment, so declaring
+    # them would force caller-side validation the caller cannot satisfy
+    # ("Secret ... is required, but not provided while calling").
 
 permissions:
   contents: read
