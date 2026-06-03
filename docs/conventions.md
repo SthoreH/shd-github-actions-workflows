@@ -22,18 +22,18 @@ Real examples:
 - Node.js — [tpl-app-aws-lbd-nodejs/.pipeline.yml](../../../tpl/tpl-app-aws-lbd-nodejs/.pipeline.yml).
 - Infra pura — [tpl-infra-aws-ddb/.pipeline.yml](../../../tpl/tpl-infra-aws-ddb/.pipeline.yml).
 
-## GitHub Environment vars (per env)
+## GitHub Environment secrets (per env)
 
 Set these on each GitHub Environment (`Settings → Environments`). They are read at workflow run time when the job declares `environment: <name>`:
 
 - `AWS_ROLE_ARN` — IAM role assumed via OIDC.
 - `TF_STATE_BUCKET` — S3 bucket holding the Terraform state for that environment. Buckets are typically per-account.
 
-Both are non-secret variables (`vars.*`), not secrets.
+Both are environment secrets (`secrets.*`).
 
 ## OIDC trust
 
-Each role configured in `vars.AWS_ROLE_ARN` must trust the GitHub Actions OIDC provider, scoped to the consumer repo (and ideally to specific environments / branches via the `sub` claim). Without this, [validate-terraform](actions/validate-terraform.md), [deploy-terraform](actions/deploy-terraform.md), and [destroy-terraform](actions/destroy-terraform.md) fail at the credentials step.
+Each role configured in `secrets.AWS_ROLE_ARN` must trust the GitHub Actions OIDC provider, scoped to the consumer repo (and ideally to specific environments / branches via the `sub` claim). Without this, [validate-terraform](actions/validate-terraform.md), [deploy-terraform](actions/deploy-terraform.md), and [destroy-terraform](actions/destroy-terraform.md) fail at the credentials step.
 
 The caller job must declare `permissions: id-token: write` so GitHub mints the OIDC token.
 
@@ -41,7 +41,7 @@ The caller job must declare `permissions: id-token: write` so GitHub mints the O
 
 Partial backend config injected at `terraform init -backend-config=...`. Consumers set `terraform { backend "s3" {} }` in `provider.tf` (no bucket / key inline).
 
-- **Bucket** — `vars.TF_STATE_BUCKET` (per environment).
+- **Bucket** — `secrets.TF_STATE_BUCKET` (per environment).
 - **Key** — `{repo-name}/terraform.tfstate` (one state per repo per env, since buckets are segregated by account).
 - **Region** — `sa-east-1` by default; overridable per action call.
 

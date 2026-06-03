@@ -6,7 +6,7 @@ Runs two parallel jobs:
 - **Validate Application** — `npm ci`, `npm run lint`, `npx tsc --noEmit`
 - **Validate Infrastructure** — `terraform fmt -check`, `init`, `validate`, `plan`
 
-Both jobs read configuration from `.pipeline.yml` via `parse-config`. The `terraform-quality` job binds to the caller's GitHub Environment to access `vars.AWS_ROLE_ARN` and `vars.TF_STATE_BUCKET`.
+Both jobs read configuration from `.pipeline.yml` via `parse-config`. The `terraform-quality` job binds to the caller's GitHub Environment to access `secrets.AWS_ROLE_ARN` and `secrets.TF_STATE_BUCKET`.
 
 ## Inputs
 

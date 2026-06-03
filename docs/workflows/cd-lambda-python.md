@@ -8,7 +8,7 @@ Source: [.github/workflows/cd-lambda-python.yml](../../.github/workflows/cd-lamb
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment. Binds the job to expose `vars.*` and trigger any environment protection rules. |
+| `environment` | yes | Target GitHub Environment. Binds the job to expose `secrets.*` and trigger any environment protection rules. |
 | `ref` | no | Git ref (tag, branch, or SHA) to check out. Empty means the workflow's default ref. Used by rollback. |
 
 ## Job
@@ -22,9 +22,9 @@ Single job `deploy` (display name "Package & Deploy"):
 5. [package-lambda-python](../actions/package-lambda-python.md) — build the `.zip`.
 6. [deploy-terraform](../actions/deploy-terraform.md) — `terraform init` + `apply`, passing the zip as a tfvar.
 
-## Required environment vars
+## Required environment secrets
 
-`vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+`secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example callers
 
