@@ -1,0 +1,91 @@
+# Reusable workflow for Amplify Node.js repos (npm, not pnpm).
+# Job 1 — nodejs-quality: installs deps, runs lint and tsc.
+# Job 2 — terraform-quality: fmt + init + validate + plan.
+# Both jobs require `github-token` because terraform plan needs TF_VAR_github_token
+# to resolve the Amplify GitHub PAT variable declared in variables.tf.
+name: Amplify Node.js CI
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+    secrets:
+      github-token:
+        description: GitHub PAT used by Amplify (forwarded as TF_VAR_github_token for terraform plan).
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  nodejs-quality:
+    name: Validate Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "NODE_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_nodejs-version'] }}" >> $GITHUB_ENV
+          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_app_working-path'] }}" >> $GITHUB_ENV
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.APP_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.APP_PATH }}
+        run: npm ci
+
+      - name: Lint
+        working-directory: ${{ env.APP_PATH }}
+        run: npm run lint
+
+      - name: Type check
+        working-directory: ${{ env.APP_PATH }}
+        run: npx tsc --noEmit
+
+  terraform-quality:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_VAR_github_token: ${{ secrets.github-token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: SthoreH/shd-github-actions-workflows/actions/parse-config@main
+        id: config-parser
+        with:
+          environment: ${{ inputs.environment }}
+
+      - name: Export Config
+        run: |
+          echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+          echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
+
+      - name: Validate Terraform
+        uses: SthoreH/shd-github-actions-workflows/actions/validate-terraform@main
+        with:
+          environment: ${{ inputs.environment }}
+          working-directory: ${{ env.TF_PATH }}
+          terraform-version: ${{ env.TF_VERSION }}
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ secrets.TF_STATE_BUCKET }}
+          tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate

@@ -23,7 +23,7 @@ jobs:
     name: Package & Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN / vars.TF_STATE_BUCKET
+    # Binds the job to the caller's GitHub Environment to expose secrets.AWS_ROLE_ARN / secrets.TF_STATE_BUCKET
     # and to trigger any environment protection rules (required reviewers, wait timers).
     environment: ${{ inputs.environment }}
     steps:
@@ -68,6 +68,6 @@ jobs:
           environment: ${{ inputs.environment }}
           working-directory: ${{ env.TF_PATH }}
           terraform-version: ${{ env.TF_VERSION }}
-          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
-          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ secrets.TF_STATE_BUCKET }}
           tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate

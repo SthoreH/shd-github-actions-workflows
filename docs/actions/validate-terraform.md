@@ -11,7 +11,7 @@ Source: [actions/validate-terraform/action.yml](../../actions/validate-terraform
 | `environment` | yes | — | Drives the per-env tfvars file: `environments/<env>.tfvars`. |
 | `working-directory` | no | `terraform-aws` | Path to the Terraform root module. |
 | `terraform-version` | no | `1.14.8` | Terraform CLI version. |
-| `tf-backend-bucket` | yes | — | S3 bucket for state. Typically `vars.TF_STATE_BUCKET`. |
+| `tf-backend-bucket` | yes | — | S3 bucket for state. Typically `secrets.TF_STATE_BUCKET`. |
 | `tf-backend-key` | yes | — | State object key. Org convention: `{repo-name}/terraform.tfstate`. |
 | `aws-role-arn` | yes | — | IAM role assumed via OIDC. |
 | `aws-region` | no | `sa-east-1` | AWS region. |

@@ -10,7 +10,7 @@ Source: [.github/workflows/cd-infra-terraform.yml](../../.github/workflows/cd-in
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment. Binds the job to expose `vars.*` and trigger any environment protection rules. |
+| `environment` | yes | Target GitHub Environment. Binds the job to expose `secrets.*` and trigger any environment protection rules. |
 | `ref` | no | Git ref (tag, branch, or SHA) to check out. Empty means the workflow's default ref. Used by rollback. |
 
 ## Job
@@ -27,9 +27,9 @@ Single job `deploy` (display name "Deploy Infrastructure"):
 
 Same as [ci-infra-terraform.yml](ci-infra-terraform.md): `pipe_infra_terraform-version`, `pipe_infra_working-path`.
 
-## Required environment vars
+## Required environment secrets
 
-`vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+`secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example callers
 

@@ -67,7 +67,7 @@ jobs:
     name: Validate Infrastructure
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Binds the job to the caller's GitHub Environment to expose vars.AWS_ROLE_ARN and vars.TF_STATE_BUCKET.
+    # Binds the job to the caller's GitHub Environment to expose secrets.AWS_ROLE_ARN and secrets.TF_STATE_BUCKET.
     environment: ${{ inputs.environment }}
     # id-token: write is required by aws-actions/configure-aws-credentials (OIDC) inside validate-terraform.
     permissions:
@@ -105,6 +105,6 @@ jobs:
           environment: ${{ inputs.environment }}
           working-directory: ${{ env.TF_PATH }}
           terraform-version: ${{ env.TF_VERSION }}
-          aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
-          tf-backend-bucket: ${{ vars.TF_STATE_BUCKET }}
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          tf-backend-bucket: ${{ secrets.TF_STATE_BUCKET }}
           tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate

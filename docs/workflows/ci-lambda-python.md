@@ -8,7 +8,7 @@ Source: [.github/workflows/ci-lambda-python.yml](../../.github/workflows/ci-lamb
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `vars.*`. |
+| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `secrets.*`. |
 
 ## Jobs
 
@@ -17,9 +17,9 @@ Source: [.github/workflows/ci-lambda-python.yml](../../.github/workflows/ci-lamb
 | `python-quality` | Validate Application | Sets up Python (with pip cache), installs app + test requirements, runs `flake8` (non-blocking) and `pytest` (blocking). |
 | `terraform-quality` | Validate Infrastructure | Calls [validate-terraform](../actions/validate-terraform.md) against the env's tfvars and state. |
 
-## Required environment vars
+## Required environment secrets
 
-For the `terraform-quality` job: `vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+For the `terraform-quality` job: `secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example caller
 

@@ -8,7 +8,7 @@ Source: [.github/workflows/ci-lambda-nodejs.yml](../../.github/workflows/ci-lamb
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `vars.*`. |
+| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `secrets.*`. |
 
 ## Jobs
 
@@ -29,9 +29,9 @@ The workflow reads these flattened keys from [parse-config](../actions/parse-con
 | `pipe_infra_terraform-version` | `infra.terraform-version` | setup-terraform |
 | `pipe_infra_working-path` | `infra.working-path` | terraform working dir |
 
-## Required environment vars
+## Required environment secrets
 
-For the `terraform-quality` job: `vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+For the `terraform-quality` job: `secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example caller
 

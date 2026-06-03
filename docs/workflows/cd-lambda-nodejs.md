@@ -8,7 +8,7 @@ Source: [.github/workflows/cd-lambda-nodejs.yml](../../.github/workflows/cd-lamb
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment. Binds the job to expose `vars.*` and trigger any environment protection rules. |
+| `environment` | yes | Target GitHub Environment. Binds the job to expose `secrets.*` and trigger any environment protection rules. |
 | `ref` | no | Git ref (tag, branch, or SHA) to check out. Empty means the workflow's default ref. Used by rollback. |
 
 ## Job
@@ -26,9 +26,9 @@ Single job `deploy` (display name "Package & Deploy"):
 
 Same as [ci-lambda-nodejs.yml](ci-lambda-nodejs.md): `pipe_runtime_nodejs-version`, `pipe_deploy_working-path`, `pipe_deploy_entry`, `pipe_infra_terraform-version`, `pipe_infra_working-path`.
 
-## Required environment vars
+## Required environment secrets
 
-`vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+`secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example callers
 

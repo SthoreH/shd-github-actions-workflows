@@ -1,5 +1,5 @@
 name: Package Node.js Lambda
-description: Builds a Lambda-compatible .zip via esbuild bundle (single-file). Supports TypeScript and JavaScript.
+description: Builds a Lambda-compatible .zip with the full working-directory structure and production dependencies.
 
 inputs:
   nodejs-version:
@@ -7,9 +7,6 @@ inputs:
     required: true
   working-directory:
     description: Source root containing package.json and pnpm-lock.yaml (e.g. app)
-    required: true
-  entry-file:
-    description: Entry file for esbuild, relative to working-directory (e.g. src/index.ts)
     required: true
   output-path:
     description: Absolute path where the resulting .zip will be written
@@ -41,26 +38,21 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
 
-    # esbuild bundle: single file, AWS SDK v3 is provided by the nodejs runtime so it's externalized.
     - name: Build package
       id: build
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
-        ENTRY_FILE: ${{ inputs.entry-file }}
-        NODEJS_VERSION: ${{ inputs.nodejs-version }}
         OUTPUT_PATH: ${{ inputs.output-path }}
       run: |
         set -euo pipefail
+        # Populate the pnpm store so the prod-only install below is fast/cached.
         pnpm install --frozen-lockfile
         BUILD_DIR=$(mktemp -d)
-        pnpm exec esbuild "$ENTRY_FILE" \
-          --bundle \
-          --platform=node \
-          --target=node${NODEJS_VERSION} \
-          --outfile="$BUILD_DIR/index.js" \
-          --external:@aws-sdk/* \
-          --minify
+        # Copy source preserving directory structure, excluding node_modules.
+        rsync -a --exclude='node_modules' . "$BUILD_DIR/"
+        # Install production deps with a flat layout that Lambda's require() can resolve.
+        (cd "$BUILD_DIR" && pnpm install --prod --frozen-lockfile --shamefully-hoist)
         mkdir -p "$(dirname "$OUTPUT_PATH")"
         (cd "$BUILD_DIR" && zip -qr "$OUTPUT_PATH" .)
         echo "zip-path=$OUTPUT_PATH" >> "$GITHUB_OUTPUT"

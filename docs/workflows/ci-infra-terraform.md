@@ -10,7 +10,7 @@ Source: [.github/workflows/ci-infra-terraform.yml](../../.github/workflows/ci-in
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `vars.*`. |
+| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `secrets.*`. |
 
 ## Job
 
@@ -30,9 +30,9 @@ Single job `terraform-quality` (display name "Validate Infrastructure"):
 
 For pure infra, `runtime`, `deploy`, and `tests` sections are not required in `.pipeline.yml`.
 
-## Required environment vars
+## Required environment secrets
 
-`vars.AWS_ROLE_ARN`, `vars.TF_STATE_BUCKET`. See [conventions](../conventions.md).
+`secrets.AWS_ROLE_ARN`, `secrets.TF_STATE_BUCKET`. See [conventions](../conventions.md).
 
 ## Example caller
 

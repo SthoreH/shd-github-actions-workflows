@@ -1,5 +1,10 @@
-# Reusable workflow for Node.js Lambda CD: token replacement -> package -> terraform apply.
-name: Lambda Node.js CD
+# Reusable workflow for Amplify repos.
+# Differences from cd-infra-terraform.yml:
+# 1. `github-token` secret is forwarded as TF_VAR_github_token at job level.
+# 2. After terraform apply, triggers an Amplify build explicitly.
+#    Amplify's enable_auto_build is set to false in Terraform so the build
+#    never starts in parallel with the apply.
+name: Amplify Terraform CD
 
 on:
   workflow_call:
@@ -12,20 +17,24 @@ on:
         type: string
         required: false
         default: ''
+    secrets:
+      github-token:
+        description: GitHub PAT used by Amplify to access the repository (forwarded as TF_VAR_github_token).
+        required: true
 
 permissions:
   contents: read
-  id-token: write   # OIDC for AWS
+  id-token: write
 
 jobs:
-  # Single job: package and deploy share the runner so the .zip stays local — no artifact handoff needed.
   deploy:
-    name: Package & Deploy
+    name: Deploy Amplify Infrastructure
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # Binds the job to the caller's GitHub Environment to expose secrets.AWS_ROLE_ARN / secrets.TF_STATE_BUCKET
-    # and to trigger any environment protection rules (required reviewers, wait timers).
+    timeout-minutes: 30
     environment: ${{ inputs.environment }}
+    # Job-level env is inherited by all steps including composite actions (deploy-terraform, validate-terraform).
+    env:
+      TF_VAR_github_token: ${{ secrets.github-token }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,30 +46,16 @@ jobs:
         with:
           environment: ${{ inputs.environment }}
 
-      # Flatten the merged config (JSON) into env vars so later steps don't repeat fromJSON expressions.
-      # Bracket notation is required: GitHub Actions dot-access doesn't work for keys containing hyphens.
       - name: Export Config
         run: |
-          echo "NODE_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_nodejs-version'] }}" >> $GITHUB_ENV
-          echo "APP_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_working-path'] }}" >> $GITHUB_ENV
-          echo "ENTRY=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_entry'] }}" >> $GITHUB_ENV
           echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
           echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
 
-      # Substitute env-specific tokens into source files before packaging.
       - name: Replace Tokens
         uses: SthoreH/shd-github-actions-workflows/actions/replace-tokens@main
         with:
           files: ${{ steps.config-parser.outputs.files_to_replace }}
           vars: ${{ steps.config-parser.outputs.config }}
-
-      # Builds the .zip at <repo-root>/dist/lambda.zip — the path the terraform locals expect.
-      - name: Package Lambda
-        uses: SthoreH/shd-github-actions-workflows/actions/package-lambda-nodejs@main
-        with:
-          nodejs-version: ${{ env.NODE_VERSION }}
-          working-directory: ${{ env.APP_PATH }}
-          entry-file: ${{ env.ENTRY }}
 
       - name: Deploy Terraform
         uses: SthoreH/shd-github-actions-workflows/actions/deploy-terraform@main
@@ -71,3 +66,18 @@ jobs:
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           tf-backend-bucket: ${{ secrets.TF_STATE_BUCKET }}
           tf-backend-key: ${{ github.event.repository.name }}/terraform.tfstate
+
+      # Reads the Amplify app_id from terraform output to trigger the build.
+      # AWS credentials are already active in the job env (set by configure-aws-credentials inside deploy-terraform).
+      - name: Get Amplify App ID
+        working-directory: ${{ env.TF_PATH }}
+        run: echo "AMPLIFY_APP_ID=$(terraform output -raw app_id)" >> $GITHUB_ENV
+
+      - name: Trigger Amplify Build
+        run: |
+          BRANCH=$([[ "${{ inputs.environment }}" == "prod" ]] && echo "main" || echo "dev")
+          aws amplify start-job \
+            --app-id "${{ env.AMPLIFY_APP_ID }}" \
+            --branch-name "$BRANCH" \
+            --job-type RELEASE \
+            --region sa-east-1

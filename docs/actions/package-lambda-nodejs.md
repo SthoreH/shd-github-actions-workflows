@@ -1,6 +1,6 @@
 # package-lambda-nodejs
 
-Builds a Lambda-compatible `.zip` for Node.js (TypeScript or JavaScript): runs `pnpm install --frozen-lockfile`, bundles the entry file with esbuild as a single minified `index.js`, then zips it. AWS SDK v3 is externalized (provided by the `nodejs22.x` runtime). Run during CD between [replace-tokens](replace-tokens.md) and [deploy-terraform](deploy-terraform.md).
+Builds a Lambda-compatible `.zip` for Node.js: runs `pnpm install --frozen-lockfile`, copies the full working-directory structure (excluding `node_modules`) to a staging directory, installs production dependencies with a flat `node_modules` layout (`--shamefully-hoist`), then zips the result. Run during CD between [replace-tokens](replace-tokens.md) and [deploy-terraform](deploy-terraform.md).
 
 Source: [actions/package-lambda-nodejs/action.yml](../../actions/package-lambda-nodejs/action.yml).
 
@@ -8,9 +8,8 @@ Source: [actions/package-lambda-nodejs/action.yml](../../actions/package-lambda-
 
 | Input | Required | Default | Description |
 |---|---|---|---|
-| `nodejs-version` | yes | — | Node.js major version (e.g. `22`). Drives `actions/setup-node` and the esbuild `--target=node<N>`. |
+| `nodejs-version` | yes | — | Node.js major version (e.g. `22`). Drives `actions/setup-node`. |
 | `working-directory` | yes | — | Source root containing `package.json` and `pnpm-lock.yaml` (e.g. `app`). |
-| `entry-file` | yes | — | Entry file for esbuild, relative to `working-directory` (e.g. `src/index.ts`). |
 | `output-path` | no | `${{ github.workspace }}/dist/lambda.zip` | Where to write the final zip. |
 | `pnpm-version` | no | `9` | pnpm major version installed by `pnpm/action-setup`. |
 
@@ -18,15 +17,11 @@ Source: [actions/package-lambda-nodejs/action.yml](../../actions/package-lambda-
 
 | Output | Description |
 |---|---|
-| `zip-path` | Absolute path to the produced `.zip`. The file contains a single bundled `index.js`. |
+| `zip-path` | Absolute path to the produced `.zip`. The file mirrors the working-directory structure with a flat `node_modules` at its root. |
 
-## Bundle behavior
+## Package layout
 
-- `--bundle --platform=node --target=node<NODEJS_VERSION>`: produces a single self-contained file.
-- `--external:@aws-sdk/*`: AWS SDK v3 modules are not bundled — they come from the Lambda runtime, keeping the artifact small.
-- `--minify`: minified for cold-start performance.
-
-If your code depends on packages outside of `@aws-sdk/*` that should NOT be bundled (e.g. native binaries), expose the action through this layer or fork — keep the bundling defaults aligned across the org.
+The zip contains all files from `working-directory` (directory structure preserved) plus production `node_modules` installed with `--shamefully-hoist`. The flat `node_modules` layout is required because Lambda's `require()` does not resolve pnpm's symlinked virtual store.
 
 ## Example usage
 

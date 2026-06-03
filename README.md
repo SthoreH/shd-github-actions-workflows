@@ -16,7 +16,7 @@ Consumers pin pieces to a published tag (e.g. `@v1.4.0`), never `@main`. Tags ar
 ## Quick start for a new consumer repo
 
 1. Add a [.pipeline.yml](docs/conventions.md) at the repo root describing your runtime, infra path, deploy paths, tests, and per-environment settings.
-2. Configure GitHub Environments (`dev`, `prod`) with `vars.AWS_ROLE_ARN` and `vars.TF_STATE_BUCKET`. Set up the IAM role's OIDC trust for your repo. Details in [docs/conventions.md](docs/conventions.md).
+2. Configure GitHub Environments (`dev`, `prod`) with `secrets.AWS_ROLE_ARN` and `secrets.TF_STATE_BUCKET`. Set up the IAM role's OIDC trust for your repo. Details in [docs/conventions.md](docs/conventions.md).
 3. Add caller workflows that delegate to the reusable workflows here. A real example lives at [app-aws-lbd-products-service/.github/workflows/](../../app/app-aws-lbd-products-service/.github/workflows/).
 
 ## Index
