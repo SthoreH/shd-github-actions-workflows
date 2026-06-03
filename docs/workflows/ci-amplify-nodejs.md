@@ -6,7 +6,7 @@ Runs two parallel jobs:
 - **Validate Application** — `npm ci`, `npm run lint`, `npx tsc --noEmit`
 - **Validate Infrastructure** — `terraform fmt -check`, `init`, `validate`, `plan`
 
-Both jobs read configuration from `.pipeline.yml` via `parse-config`. The `terraform-quality` job binds to the caller's GitHub Environment to access `secrets.AWS_ROLE_ARN` and `secrets.TF_STATE_BUCKET`.
+Both jobs read configuration from `.pipeline.yml` via `parse-config`. The `terraform-quality` job receives `AWS_ROLE_ARN` and `TF_STATE_BUCKET` via the declared `workflow_call` secrets.
 
 ## Inputs
 
@@ -19,6 +19,8 @@ Both jobs read configuration from `.pipeline.yml` via `parse-config`. The `terra
 | Name | Required | Description |
 |------|----------|-------------|
 | `github-token` | yes | GitHub PAT for Amplify repository access. Forwarded as `TF_VAR_github_token` for `terraform plan`. |
+| `AWS_ROLE_ARN` | yes | AWS IAM role ARN to assume via OIDC. |
+| `TF_STATE_BUCKET` | yes | S3 bucket for Terraform state backend. |
 
 ## `.pipeline.yml` keys consumed
 
@@ -48,4 +50,6 @@ jobs:
       environment: dev
     secrets:
       github-token: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
 ```

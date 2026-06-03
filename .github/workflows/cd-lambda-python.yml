@@ -12,6 +12,13 @@ on:
         type: string
         required: false
         default: ''
+    secrets:
+      AWS_ROLE_ARN:
+        description: AWS IAM role ARN to assume via OIDC.
+        required: true
+      TF_STATE_BUCKET:
+        description: S3 bucket for Terraform state backend.
+        required: true
 
 permissions:
   contents: read
@@ -23,8 +30,7 @@ jobs:
     name: Package & Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Binds the job to the caller's GitHub Environment to expose secrets.AWS_ROLE_ARN / secrets.TF_STATE_BUCKET
-    # and to trigger any environment protection rules (required reviewers, wait timers).
+    # Binds the job to the caller's GitHub Environment to trigger protection rules (required reviewers, wait timers).
     environment: ${{ inputs.environment }}
     steps:
       - name: Checkout

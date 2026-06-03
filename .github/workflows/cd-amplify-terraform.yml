@@ -21,6 +21,12 @@ on:
       github-token:
         description: GitHub PAT used by Amplify to access the repository (forwarded as TF_VAR_github_token).
         required: true
+      AWS_ROLE_ARN:
+        description: AWS IAM role ARN to assume via OIDC.
+        required: true
+      TF_STATE_BUCKET:
+        description: S3 bucket for Terraform state backend.
+        required: true
 
 permissions:
   contents: read

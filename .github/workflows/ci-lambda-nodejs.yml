@@ -7,6 +7,13 @@ on:
       environment:
         type: string
         required: true
+    secrets:
+      AWS_ROLE_ARN:
+        description: AWS IAM role ARN to assume via OIDC.
+        required: true
+      TF_STATE_BUCKET:
+        description: S3 bucket for Terraform state backend.
+        required: true
 
 # Least-privilege baseline; jobs override when they need more (e.g. id-token: write for OIDC).
 permissions:
@@ -65,7 +72,7 @@ jobs:
     name: Validate Infrastructure
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Binds the job to the caller's GitHub Environment to expose secrets.AWS_ROLE_ARN and secrets.TF_STATE_BUCKET.
+    # Binds the job to the caller's GitHub Environment for protection rules and deployment tracking.
     environment: ${{ inputs.environment }}
     # id-token: write is required by aws-actions/configure-aws-credentials (OIDC) inside validate-terraform.
     permissions:

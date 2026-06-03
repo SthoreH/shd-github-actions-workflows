@@ -8,7 +8,7 @@ Source: [.github/workflows/cd-lambda-python.yml](../../.github/workflows/cd-lamb
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment. Binds the job to expose `secrets.*` and trigger any environment protection rules. |
+| `environment` | yes | Target GitHub Environment. Binds the job to trigger environment protection rules (required reviewers, wait timers). |
 | `ref` | no | Git ref (tag, branch, or SHA) to check out. Empty means the workflow's default ref. Used by rollback. |
 
 ## Job

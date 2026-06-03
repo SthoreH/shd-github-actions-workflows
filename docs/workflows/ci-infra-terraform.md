@@ -10,7 +10,7 @@ Source: [.github/workflows/ci-infra-terraform.yml](../../.github/workflows/ci-in
 
 | Input | Required | Description |
 |---|---|---|
-| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and exposes `secrets.*`. |
+| `environment` | yes | Target GitHub Environment (e.g. `dev`, `prod`). Drives the parse-config selection and triggers environment protection rules. |
 
 ## Job
 
