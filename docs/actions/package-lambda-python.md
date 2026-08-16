@@ -12,6 +12,7 @@ Source: [actions/package-lambda-python/action.yml](../../actions/package-lambda-
 | `working-directory` | yes | — | Source root containing app code and the requirements file (e.g. `app`). |
 | `requirements` | yes | — | Requirements file name relative to `working-directory`. |
 | `output-path` | no | `${{ github.workspace }}/dist/lambda.zip` | Where to write the final zip. |
+| `architecture` | no | `x86_64` | Target Lambda architecture (`x86_64` or `arm64`). Runners are x86_64; for `arm64` the install fetches `manylinux2014_aarch64` wheels via `--platform`/`--only-binary=:all:` instead of building for the host. Every dependency must ship a wheel for that platform. Any value other than exactly `arm64` (including an empty string) behaves like today. |
 
 ## Outputs
 

@@ -58,6 +58,7 @@ jobs:
           echo "APP_REQS=${{ fromJSON(steps.config-parser.outputs.config)['pipe_deploy_requirements'] }}" >> $GITHUB_ENV
           echo "TF_PATH=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_working-path'] }}" >> $GITHUB_ENV
           echo "TF_VERSION=${{ fromJSON(steps.config-parser.outputs.config)['pipe_infra_terraform-version'] }}" >> $GITHUB_ENV
+          echo "ARCHITECTURE=${{ fromJSON(steps.config-parser.outputs.config)['pipe_runtime_architecture'] }}" >> $GITHUB_ENV
 
       # Substitute env-specific tokens into source files before packaging.
       - name: Replace Tokens
@@ -73,6 +74,7 @@ jobs:
           python-version: ${{ env.PY_VERSION }}
           working-directory: ${{ env.APP_PATH }}
           requirements: ${{ env.APP_REQS }}
+          architecture: ${{ env.ARCHITECTURE }}
 
       - name: Deploy Terraform
         uses: SthoreH/shd-github-actions-workflows/actions/deploy-terraform@main

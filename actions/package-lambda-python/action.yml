@@ -15,6 +15,14 @@ inputs:
     description: Absolute path where the resulting .zip will be written
     required: false
     default: ${{ github.workspace }}/dist/lambda.zip
+  architecture:
+    description: >-
+      Target Lambda architecture (x86_64 or arm64). Runners are x86_64, so an
+      arm64 Lambda needs pip to fetch wheels for the target platform instead of
+      the host's — otherwise native dependencies are packaged for the wrong
+      architecture and fail at import time.
+    required: false
+    default: x86_64
 
 outputs:
   zip-path:
@@ -39,10 +47,21 @@ runs:
         WORKING_DIR: ${{ inputs.working-directory }}
         REQUIREMENTS: ${{ inputs.requirements }}
         OUTPUT_PATH: ${{ inputs.output-path }}
+        ARCHITECTURE: ${{ inputs.architecture }}
+        PY_VERSION: ${{ inputs.python-version }}
       run: |
         set -euo pipefail
         BUILD_DIR=$(mktemp -d)
-        pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR"
+        # Cross-platform install for arm64: --platform requires --only-binary,
+        # so every dependency must ship a wheel (all of them do today).
+        if [ "$ARCHITECTURE" = "arm64" ]; then
+          pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR" \
+            --platform manylinux2014_aarch64 \
+            --python-version "$PY_VERSION" \
+            --only-binary=:all:
+        else
+          pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR"
+        fi
         rsync -a --exclude="$REQUIREMENTS" "$WORKING_DIR/" "$BUILD_DIR/"
         mkdir -p "$(dirname "$OUTPUT_PATH")"
         (cd "$BUILD_DIR" && zip -qr "$OUTPUT_PATH" .)
