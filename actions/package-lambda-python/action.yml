@@ -15,6 +15,17 @@ inputs:
     description: Absolute path where the resulting .zip will be written
     required: false
     default: ${{ github.workspace }}/dist/lambda.zip
+  architecture:
+    description: >-
+      Target Lambda architecture (x86_64 or arm64). Runners are x86_64, so an
+      arm64 Lambda needs pip to fetch wheels for the target platform instead of
+      the host's — otherwise native dependencies are packaged for the wrong
+      architecture and fail at import time. When left empty (the default),
+      falls back to `.runtime.architecture` in the repo root's
+      `.pipeline.yml`, then to `x86_64` if that's absent too — see
+      docs/actions/package-lambda-python.md for the full resolution order.
+    required: false
+    default: ""
 
 outputs:
   zip-path:
@@ -39,10 +50,45 @@ runs:
         WORKING_DIR: ${{ inputs.working-directory }}
         REQUIREMENTS: ${{ inputs.requirements }}
         OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_ARCHITECTURE: ${{ inputs.architecture }}
+        PY_VERSION: ${{ inputs.python-version }}
+        PIPELINE_FILE: ${{ github.workspace }}/.pipeline.yml
       run: |
         set -euo pipefail
         BUILD_DIR=$(mktemp -d)
-        pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR"
+
+        # Resolution order: explicit input > .pipeline.yml's runtime.architecture > x86_64.
+        # The fallback exists so consumers pinned to an older tag of this repo (before the
+        # `architecture` input existed) still get correct wheels for a Lambda declared arm64
+        # in their own .pipeline.yml, with no pin bump required.
+        if [ -n "$INPUT_ARCHITECTURE" ]; then
+          ARCHITECTURE="$INPUT_ARCHITECTURE"
+          ARCH_SOURCE="input"
+        elif [ -f "$PIPELINE_FILE" ]; then
+          FILE_ARCHITECTURE=$(yq -r '.runtime.architecture // ""' "$PIPELINE_FILE" 2>/dev/null || echo "")
+          if [ -n "$FILE_ARCHITECTURE" ] && [ "$FILE_ARCHITECTURE" != "null" ]; then
+            ARCHITECTURE="$FILE_ARCHITECTURE"
+            ARCH_SOURCE=".pipeline.yml"
+          else
+            ARCHITECTURE="x86_64"
+            ARCH_SOURCE="default (no runtime.architecture in .pipeline.yml)"
+          fi
+        else
+          ARCHITECTURE="x86_64"
+          ARCH_SOURCE="default (no .pipeline.yml)"
+        fi
+        echo "Resolved architecture: $ARCHITECTURE (source: $ARCH_SOURCE)"
+
+        # Cross-platform install for arm64: --platform requires --only-binary,
+        # so every dependency must ship a wheel (all of them do today).
+        if [ "$ARCHITECTURE" = "arm64" ]; then
+          pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR" \
+            --platform manylinux2014_aarch64 \
+            --python-version "$PY_VERSION" \
+            --only-binary=:all:
+        else
+          pip install -r "$WORKING_DIR/$REQUIREMENTS" -t "$BUILD_DIR"
+        fi
         rsync -a --exclude="$REQUIREMENTS" "$WORKING_DIR/" "$BUILD_DIR/"
         mkdir -p "$(dirname "$OUTPUT_PATH")"
         (cd "$BUILD_DIR" && zip -qr "$OUTPUT_PATH" .)
