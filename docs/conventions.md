@@ -8,7 +8,7 @@ Lives at the consumer repo root. Parsed by [parse-config](actions/parse-config.m
 
 | Section | Required for | Purpose | Flattened keys |
 |---|---|---|---|
-| `runtime` | Lambda apps | Lambda runtime version. Set the key matching your stack: `python-version` or `nodejs-version`. | `pipe_runtime_python-version` **or** `pipe_runtime_nodejs-version` |
+| `runtime` | Lambda apps | Lambda runtime version. Set the key matching your stack: `python-version` or `nodejs-version`. Optionally `architecture` (`x86_64` or `arm64`; defaults to `x86_64` when omitted) for Python Lambdas with native dependencies. | `pipe_runtime_python-version` **or** `pipe_runtime_nodejs-version`, plus optional `pipe_runtime_architecture` |
 | `infra` | all | IaC tool version and root module path. | `pipe_infra_terraform-version`, `pipe_infra_working-path` |
 | `deploy` | Lambda apps | Source code root and per-runtime build inputs. | Python: `pipe_deploy_working-path`, `pipe_deploy_requirements`. Node.js: `pipe_deploy_working-path`, `pipe_deploy_entry`. |
 | `tests` | Lambda apps | Test root (and test requirements for Python). | Python: `pipe_tests_working-path`, `pipe_tests_requirements`. Node.js: `pipe_tests_working-path`. |
